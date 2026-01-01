@@ -1,0 +1,968 @@
+# Load libraries
+
+Note that I've loaded relevant libraries and create a merged dataframe of all Pavlovia responses and Qualtrics data.
+
+```{r, include = FALSE}
+library(tidyverse)
+library(purrr)
+
+# Load in data
+library(fs)
+
+# Plotting
+library(plotly)
+library(wesanderson)
+
+# Statistical Analysis
+library(psych)
+library(lme4)
+library(lmerTest)
+library(r2mlm)
+library(rockchalk)
+library(rstatix)
+```
+
+```{r read in data, include = FALSE}
+# Function to read and process individual group data
+read_and_label <- function(data_path, label) {
+  list_csv <- dir_ls(data_path, regexp = "\\.csv$")
+  map_dfr(list_csv, read_csv, .id = "file") %>%
+    mutate(
+      participant = str_replace(file, "^.*?/(.*?)\\.csv$", "\\1"),
+      ctl_or_exper = label
+    )
+}
+
+# Read and label experimental data
+data_exper <- read_and_label("/Users/christinahuber/Desktop/ldt-replication/data", "exper")
+
+# Read and label control data
+data_ctl <- read_and_label("/Users/christinahuber/Desktop/ldt_no_images/data", "ctl")
+
+# Combine the data
+data <- bind_rows(data_exper, data_ctl)
+```
+
+```{r process data, include = FALSE}
+# Process the combined data
+data_processed <- data %>%
+  # Remove rows without values in "on_time.keys" or "on_time_2.keys"
+  filter(!is.na(on_time.keys) & !is.na(on_time_2.keys)) %>%
+  # Remove brackets and quotation marks from relevant columns
+  mutate(across(everything(), ~str_replace_all(., "[\\[\\]\"]", ""))) %>%
+  # Create "good_on_left" column and choices
+  mutate(
+    good_on_left = as.numeric(as.logical(as.integer(str_sub(participant, -1)) %% 2)),
+    choice_1 = case_when(
+      good_on_left == 1 & on_time.keys == "a" ~ 1,
+      good_on_left == 1 & on_time.keys == "l" ~ 0,
+      good_on_left == 0 & on_time.keys == "a" ~ 0,
+      good_on_left == 0 & on_time.keys == "l" ~ 1,
+      TRUE ~ NA_real_
+    ),
+    choice_2 = case_when(
+      good_on_left == 1 & on_time_2.keys == "a" ~ 1,
+      good_on_left == 1 & on_time_2.keys == "l" ~ 0,
+      good_on_left == 0 & on_time_2.keys == "a" ~ 0,
+      good_on_left == 0 & on_time_2.keys == "l" ~ 1,
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  # Convert reaction time data to numeric
+  mutate(
+    on_time.rt = as.numeric(on_time.rt),
+    on_time_2.rt = as.numeric(on_time_2.rt)
+  )
+```
+
+
+```{r filter columns, include = FALSE}
+# Read in the "qualtrics.csv" file
+qualtrics <- read.csv("qualtrics.csv")
+
+# Calculate the number of incorrect attention check responses and the total responses
+attention_check_summary <- data_processed %>%
+  summarize(
+    total_responses = n(),
+    incorrect_Woo1_15 = sum(Woo1_15 != 1, na.rm = TRUE),
+    incorrect_Woo3_6 = sum(Woo3_6 != 4, na.rm = TRUE),
+    correct_attention_checks = sum(Woo1_15 == 1 & Woo3_6 == 4, na.rm = TRUE)
+  )
+
+# Print the summary
+print(attention_check_summary)
+
+# ------------------------------
+# 1. Data transformation and filtering
+# ------------------------------
+
+filtered_columns <- data_processed %>%
+  select(
+    participant, base_image, base_word, target_word, target_condition,
+    on_time.rt, on_time_2.rt, choice_1, choice_2, correct_answer_1,
+    correct_answer_2, run_num, early_keys.keys,
+    matches("^(Woo[123]_|NR[12]_|AOT_)") # grab individual difference variables
+  ) %>%
+  filter(
+    Woo1_15 == 1, Woo3_6 == 4, is.na(early_keys.keys),
+    !is.na(on_time_2.rt), !is.na(on_time.rt),
+    on_time.rt >= 0.2, on_time.rt <= 1.5,
+    on_time_2.rt >= 0.2, on_time_2.rt <= 1.5
+  ) %>%
+  mutate(
+    target_condition = factor(target_condition, levels = c("DI", "II", "NI", "CI", "DD", "ID", "ND", "CD", "DN", "IN", "NN", "CN", "DC", "IC", "NC", "CC")),
+    participant = as.numeric(participant),
+    across(c(starts_with("NR1_"), starts_with("NR2_"), starts_with("AOT_"), starts_with("Woo1_"), starts_with("Woo2_"), starts_with("Woo3_")), as.numeric),
+    condition = target_condition
+  ) %>%
+  separate(target_condition, into = c("code1", "code2"), sep = 1) %>%
+  group_by(code1) %>%
+  mutate(first_RT_mean = mean(on_time.rt)) %>%
+  ungroup() %>%
+  mutate(
+    base_image = gsub("[^0-9]", "", base_image),
+    first_choice_wrong = ifelse(choice_1 != correct_answer_1, 1, 0),
+    second_choice_wrong = ifelse(choice_2 != correct_answer_2, 1, 0),
+    difference_rt = on_time_2.rt - on_time.rt
+  ) %>%
+  filter(choice_1 == correct_answer_1 & choice_2 == correct_answer_2)
+
+# ------------------------------
+# 2. Additional data manipulations
+# ------------------------------
+
+# Marcel type
+filtered_columns <- filtered_columns %>%
+  mutate(marcel_type = case_when(
+    code1 == code2 ~ "congruent",
+    code2 == "I" ~ "control",
+    TRUE ~ "incongruent"
+  ))
+
+# Stephanie NR composite
+filtered_columns <- filtered_columns %>%
+  mutate(
+    NR2_1_reverse = 8 - NR2_1,
+    NR2_3_reverse = 8 - NR2_3,
+    Stephanie_NR_composite = NR2_1_reverse + NR2_2 + NR2_3_reverse + NR2_4
+  )
+
+# Christina NR composite
+filtered_columns <- filtered_columns %>%
+  mutate(
+    NR1_2_reverse = 8 - NR1_2,
+    NR1_3_reverse = 8 - NR1_3,
+    NR1_5_reverse = 8 - NR1_5,
+    Christina_NR_composite = NR1_1 + NR1_2_reverse + NR1_3_reverse + NR1_4 + NR1_5_reverse + NR1_6
+  )
+
+# Reverse coding for certain columns
+reverse_columns <- c("Woo1_1", "Woo1_2", "Woo1_3", "Woo1_4", "Woo1_5", "Woo1_6", "Woo1_7", "Woo1_8", "Woo1_9", "Woo1_10", "Woo1_11", "Woo1_12", "Woo1_13", "Woo1_14", "Woo1_16", "Woo1_17", "Woo1_18", "Woo1_19", "Woo2_5", "Woo2_6", "Woo2_7", "Woo2_8", "Woo2_9", "Woo2_10", "Woo2_12")
+
+for (col in reverse_columns) {
+  filtered_columns[filtered_columns[col] != "NA", col] <- 5 - filtered_columns[filtered_columns[col] != "NA", col]
+}
+
+# ------------------------------
+# 3. Create a dataframe for facets
+# ------------------------------
+
+# List for each facet
+facets <- list(
+  Intellectual_Efficiency = c('Woo1_6', 'Woo1_8', 'Woo1_13', 'Woo2_4', 'Woo2_7', 'Woo2_15', 'Woo3_4', 'Woo3_9', 'Woo3_16'),
+  Ingenuity = c('Woo1_4', 'Woo1_10', 'Woo1_14', 'Woo2_1', 'Woo2_9', 'Woo2_16', 'Woo3_7', 'Woo3_10', 'Woo3_19'),
+  Curiosity = c('Woo1_2', 'Woo1_9', 'Woo1_17', 'Woo2_5', 'Woo2_12', 'Woo2_17', 'Woo3_3', 'Woo3_11', 'Woo3_17'),
+  Aesthetics = c('Woo1_3', 'Woo1_7', 'Woo1_16', 'Woo2_2', 'Woo2_8', 'Woo2_14', 'Woo3_5', 'Woo3_12', 'Woo3_18'),
+  Tolerance = c('Woo1_5', 'Woo1_12', 'Woo1_18', 'Woo2_3', 'Woo2_11', 'Woo2_18', 'Woo3_2', 'Woo3_13', 'Woo3_15'),
+  Depth = c('Woo1_1', 'Woo1_11', 'Woo1_19', 'Woo2_6', 'Woo2_10', 'Woo2_13', 'Woo3_1', 'Woo3_8', 'Woo3_14')
+)
+
+facet_df <- do.call(rbind, lapply(names(facets), function(facet) {
+  data.frame(Facet = facet, t(facets[[facet]]))
+}))
+
+colnames(facet_df) <- c("Facet", "Woo1", "Woo2", "Woo3", "Woo4", "Woo5", "Woo6", "Woo7", "Woo8", "Woo9")
+print(facet_df)
+
+# List of facets with their respective items
+facets_list <- list(
+  intellectual_efficiency = intellectual_efficiency,
+  ingenuity = ingenuity,
+  curiosity = curiosity,
+  aesthetics = aesthetics,
+  tolerance = tolerance,
+  depth = depth
+)
+
+# Compute composite scores for each facet
+filtered_columns <- filtered_columns %>%
+  mutate(across(
+    all_of(names(facets_list)),
+    ~rowSums(select(., facets_list[[.]]), na.rm = TRUE),
+    .names = "composite_{.}"
+  ))
+
+filtered_columns <- filtered_columns %>%
+  mutate(
+    correct_answer_1 = if_else(correct_answer_1 == "yes", 1, 0),
+    correct_answer_2 = if_else(correct_answer_2 == "yes", 1, 0)
+  )
+```
+
+```{r second choice wrong df, include = FALSE}
+mistakes_included <- filtered_columns
+
+second_choice_wrong <- filtered_columns %>% 
+  filter(choice_2 != correct_answer_2 & choice_1 == correct_answer_1)
+
+df <- second_choice_wrong$condition %>%
+  table() %>%
+  as.data.frame() %>%
+  arrange(Var1)
+```
+
+```{r means table, include = FALSE}
+means <- filtered_columns %>%
+  dplyr::group_by(condition) %>%
+  dplyr::summarize(on_time_rt_mean = mean(as.numeric(on_time.rt)),
+                   on_time_2_rt_mean = mean(as.numeric(on_time_2.rt)),
+                   first_RT_mean = mean(first_RT_mean),
+                   difference_mean = mean(as.numeric(difference_rt)))
+
+# Melt the means dataframe to long format
+means_long <- reshape2::melt(means, id.vars = "condition")
+```
+
+```{r 2x3 df, include = FALSE}
+two_by_three <- filtered_columns %>%
+  filter(code1 %in% c("D", "N")) %>%
+  mutate(
+    code1 = factor(code1),
+    code2 = factor(code2)
+  ) %>%
+  group_by(code1, code2) %>%
+  summarise(mean_rt = mean(on_time_2.rt, na.rm = TRUE)) %>%
+  mutate(rt_gm = exp(mean(log(on_time_2.rt, na.rm = TRUE))))  # if you need geometric mean
+
+```
+
+```{r}
+# Define a function to filter, group, and count
+pick_cols_and_count <- function(data, code1_vals, code2_vals) {
+  data %>%
+    filter(code1 %in% code1_vals, code2 %in% code2_vals) %>%
+    group_by(participant, code2, ctl_or_exper) %>%
+    dplyr::count(second_choice_wrong) %>%
+    pivot_wider(names_from = "second_choice_wrong", values_from = c("n"), values_fill = 0) %>%
+    pivot_wider(names_from = "code2", values_from = c("0", "1"))
+}
+
+# Define a function to filter, group, and calculate means
+calculate_means <- function(data, code1_vals, code2_vals) {
+  data %>%
+    filter(code1 %in% code1_vals, code2 %in% code2_vals) %>%
+    mutate(across(c(code1, code2), as.factor)) %>%
+    mutate(code1 = relevel(code1, ref = "N"), code2 = relevel(code2, ref = "D")) %>%
+    group_by(code1, ctl_or_exper) %>%
+    summarise(mean_RT = mean(on_time_2.rt))
+}
+
+# Use the functions for different conditions
+DN_vs_DI <- pick_cols_and_count(filtered_columns, c("D"), c("N", "I"))
+ND_vs_NI <- pick_cols_and_count(filtered_columns, c("N"), c("D", "I"))
+DD_vs_NN <- pick_cols_and_count(filtered_columns, c("D", "N"), c("D", "N"))
+DN_vs_ND <- pick_cols_and_count(filtered_columns, c("D", "N"), c("N", "D"))
+
+DI_vs_DN_means <- calculate_means(filtered_columns, c("D"), c("N", "I"))
+NI_vs_ND_means <- calculate_means(filtered_columns, c("N"), c("D", "I"))
+DN_vs_ND_means <- calculate_means(filtered_columns, c("D", "N"), c("N", "D"))
+```
+
+
+```{r calculate and print proportions, include = FALSE}
+# Function to calculate incorrect proportions and differences
+calculate_proportions <- function(df, incorrect_suffix, correct_suffix) {
+  df %>%
+    group_by(participant, ctl_or_exper) %>%
+    mutate(
+      I_prop_incorrect = case_when(
+        .data[[paste0("1", incorrect_suffix)]] >= 1 ~ 
+          .data[[paste0("1", incorrect_suffix)]] / 
+          (.data[[paste0("1", incorrect_suffix)]] + .data[[paste0("0", incorrect_suffix)]])
+        ,
+        TRUE ~ 0
+      ),
+      X_prop_incorrect = case_when(
+        .data[[paste0("1", correct_suffix)]] >= 1 ~ 
+          .data[[paste0("1", correct_suffix)]] / 
+          (.data[[paste0("1", correct_suffix)]] + .data[[paste0("0", correct_suffix)]])
+        ,
+        TRUE ~ 0
+      ),
+      difference = X_prop_incorrect - I_prop_incorrect
+    ) %>%
+    ungroup()
+}
+
+# Apply the function to both data frames
+reshape <- calculate_proportions(reshape, "_I", "_N")
+reshape2 <- calculate_proportions(reshape2, "_I", "_D")
+
+# Merge NR_df with both reshape and reshape2
+reshape <- merge(reshape, NR_df, by = "participant")
+reshape2 <- merge(reshape2, NR_df, by = "participant")
+
+# Summarize the mean incorrect proportions for DN vs DI and ND vs NI
+sum1 <- reshape %>%
+  summarise(DN = mean(N_prop_incorrect),
+            DI = mean(I_prop_incorrect))
+
+sum2 <- reshape2 %>%
+  summarise(ND = mean(X_prop_incorrect),
+            NI = mean(I_prop_incorrect))
+
+# Combine sum1 and sum2 into a single data frame
+sum_combined <- bind_rows(sum1, sum2)
+
+# Transpose dataframe and convert to 1-column dataframe
+sum_new <- as.data.frame(t(sum_combined))
+
+# Add row names as a column called "condition"
+sum_new <- rownames_to_column(sum_new, var = "condition")
+
+# View the resulting dataframe
+sum_new
+
+```
+
+```{r summarize conditions, include = FALSE}
+# merge the two data frames
+merged_df <- merge(two_by_three, reshape, by = "participant", all = TRUE)
+
+# relevel factors and summarize data in one chain
+summary_df <- merged_df %>%
+  mutate(across(c(code1, code2), factor, levels = c("N", "I"))) %>%
+  group_by(code1, code2, ctl_or_exper) %>%
+  summarise(mean_rt = mean(on_time_2.rt, na.rm = TRUE),
+            se_rt = sd(on_time_2.rt, na.rm = TRUE) / sqrt(n()), .groups = 'drop')
+
+summary_df
+```
+
+```{r}
+# If you want to check the correlation between Woo_composite and difference_rt for incongruent trials:
+incongruent_data <- filtered_columns %>%
+  filter(marcel_type == "incongruent")
+```
+
+
+
+
+# Exploratory data analysis
+
+```{r, echo = FALSE}
+# count number of distinct participants
+num_participants <- length(unique(data$participant))
+
+# print result
+cat("Number of participants:", num_participants)
+```
+
+```{r}
+# Create the scatter plot
+ggplot(filtered_columns, aes(x = on_time.rt, y = on_time_2.rt, color = condition)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(x = "Response to Word 1", y = "Response to Word 2") +
+  theme_minimal()
+
+cor.test(filtered_columns$on_time.rt, filtered_columns$on_time_2.rt)
+```
+
+First, I want to gain a sense of the distribution of responses to both the priming word (histogram 1) and target word (histogram 2.)
+
+```{r, echo = FALSE}
+# Histogram of on_time.keys (reaction time to first word)
+ggplot(filtered_columns, aes(x = on_time.rt)) +
+  geom_histogram(binwidth = 0.01) +
+  labs(
+    title = "Distribution for first key press (without cutoffs)", 
+    x = "RTs", 
+    y = "Frequency")
+
+# Histogram of on_time_2.keys (reaction time to second word)
+ggplot(filtered_columns, aes(x = on_time_2.rt)) +
+  geom_histogram(binwidth = 0.01) +
+  labs(
+    title = "Distribution for second key press (without cutoffs)", 
+    x = "RTs", 
+    y = "Frequency")
+
+# Histogram of on_time.keys (reaction time to first word)
+ggplot(filtered_columns, aes(x = on_time.rt)) +
+  geom_histogram(binwidth = 0.01) +
+  labs(
+    title = "Distribution for first key press (without cutoffs)", 
+    x = "RTs", 
+    y = "Frequency")
+
+# Histogram of on_time_2.keys (reaction time to second word)
+ggplot(filtered_columns, aes(x = on_time_2.rt)) +
+  geom_histogram(binwidth = 0.01) +
+  labs(
+    title = "Distribution for second key press (without cutoffs)", 
+    x = "RTs", 
+    y = "Frequency")
+
+
+```
+
+The data have a slight skew, although transforming them could remove variance of interest.
+
+Now, let's take a look at the means by condition, bearing in mind that trials ending in "I" are slowed down about 30msec due to "yes" bias -- i.e., participants are slower to respond "no" to irrelevant words than they are to respond "yes" to relevant words.
+
+```{r, echo = FALSE}
+print(means)
+```
+
+```{r}
+new_order <- c("DD", "ID", "ND", "DI", "II", "NI", "DN", "IN", "NN")
+my_order <- c("DD", "DI", "DN", "ID", "II", "IN", "ND", "NI", "NN")
+
+filtered_columns$condition <- factor(filtered_columns$condition, levels = my_order)
+label_df <- label_df %>% filter(condition %in% my_order)
+```
+
+## Trait individual differences
+
+Now, let's take a look at the distribution of participants' trait naive realism scores.
+
+```{r NR plots, echo = FALSE, warning = FALSE}
+ggplot(filtered_columns, aes(x = Stephanie_NR_composite)) +
+  labs(title = "Distribution of NR composite scores", x = "RTs", y = "Frequency") +
+  geom_histogram(fill="#69b3a2", color="#e9ecef") +
+  facet_wrap(~ctl_or_exper)
+
+ggplot(filtered_columns, aes(x = Christina_NR_composite)) +
+  labs(title = "Distribution of NR composite scores", x = "RTs", y = "Frequency") +
+  geom_histogram(fill="#69b3a2", color="#e9ecef") +
+  facet_wrap(~ctl_or_exper)
+
+```
+
+```{r NR correlations}
+compute_correlation <- function(df, composite_col) {
+  result <- cor.test(df[[composite_col]], df$difference_rt)
+  return(list(correlation = result$estimate, p.value = result$p.value))
+}
+
+results_filtered <- compute_correlation(filtered_columns, "Stephanie_NR_composite")
+results_incongruent <- compute_correlation(incongruent_data, "Stephanie_NR_composite")
+
+cat("For filtered_columns:\nCorrelation between difference_rt and Stephanie_NR_composite:", results_filtered$correlation, "\nP-value:", results_filtered$p.value, "\n\n")
+cat("For incongruent_data:\nCorrelation between difference_rt and Stephanie_NR_composite:", results_incongruent$correlation, "\nP-value:", results_incongruent$p.value)
+```
+
+
+```{r woo plots, echo = FALSE, warning = FALSE}
+# Create a Woo_composite variable by averaging all the Woo columns
+filtered_columns <- filtered_columns %>%
+  mutate(Woo_composite = rowMeans(select(., starts_with("Woo"))))
+
+ggplot(filtered_columns, aes(x = Woo_composite)) +
+  labs(title = "Distribution of NR composite scores", x = "RTs", y = "Frequency") +
+  geom_histogram(fill="#69b3a2", color="#e9ecef") +
+  facet_wrap(~ctl_or_exper)
+
+cor_test <- cor.test(incongruent_data$Woo_composite, incongruent_data$difference_rt)
+
+print(cor_test)
+
+ggplot(filtered_columns, aes(x = Woo_composite)) +
+  labs(title = "Distribution of Woo openness composite scores", x = "RTs", y = "Frequency") +
+  geom_histogram(fill="#69b3a2", color="#e9ecef") +
+  facet_wrap(~ctl_or_exper)
+
+# Creating composite columns for each facet
+filtered_columns <- filtered_columns %>%
+  mutate(
+    Intellectual_Efficiency_composite = rowMeans(select(., intellectual_efficiency)),
+    Ingenuity_composite = rowMeans(select(., ingenuity)),
+    Curiosity_composite = rowMeans(select(., curiosity)),
+    Aesthetics_composite = rowMeans(select(., aesthetics)),
+    Tolerance_composite = rowMeans(select(., tolerance)),
+    Depth_composite = rowMeans(select(., depth))
+  )
+
+# List of composite names
+composite_names <- c(
+  "Intellectual_Efficiency_composite", 
+  "Ingenuity_composite", 
+  "Curiosity_composite", 
+  "Aesthetics_composite", 
+  "Tolerance_composite", 
+  "Depth_composite")
+
+# Loop over each composite and produce a histogram
+for (composite in composite_names) {
+  
+  p <- ggplot(filtered_columns, aes_string(x = composite)) +
+    labs(title = paste("Distribution of", composite, "scores"), x = "Composite Score", y = "Frequency") +
+    geom_histogram(fill="#69b3a2", color="#e9ecef") +
+    facet_wrap(~ctl_or_exper)
+  
+  print(p)
+}
+```
+
+```{r woo correlations, include = FALSE}
+# Compute correlations and p-values
+results <- lapply(composite_names, function(col_name) {
+  test <- cor.test(incongruent_data[[col_name]], incongruent_data$difference_rt)
+  return(list(correlation = test$estimate, p.value = test$p.value))
+})
+
+# Extract p-values
+p_values <- sapply(results, function(res) res$p.value)
+
+# Correct for multiple comparisons
+adjusted_p_values <- p.adjust(p_values, method = "holm")
+
+# Combine results into a dataframe
+correlation_df <- data.frame(
+  Facet = composite_names,
+  Correlation = sapply(results, function(res) res$correlation),
+  PValue = p_values,
+  AdjustedPValue = adjusted_p_values
+)
+
+print(correlation_df)
+```
+
+
+## RTs
+
+Here are three visualizations of the reaction times. Difference scores compare responses to the priming word vs. target word. The conditions of interest are the first and last three sets of columns.
+
+```{r, echo = FALSE}
+means_long %>%
+  mutate(condition = factor(condition, levels = my_order)) %>%
+  filter(variable %in% c("on_time_rt_mean", "on_time_2_rt_mean"), condition %in% my_order) %>%
+  ggplot(aes(x = condition, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = wes_palette("Darjeeling2")) +
+  labs(x = "Target Condition", y = "Mean On-Time RT", fill = "") +
+  theme_minimal() +
+  facet_wrap(~ctl_or_exper)
+```
+
+# Pairwise comparisons
+
+```{r, echo = FALSE}
+# Combine datasets and add a 'condition_comparison' column to identify each set
+combined_conditions <- bind_rows(
+  DN_vs_DI %>% mutate(condition_comparison = "DN_vs_DI"),
+  ND_vs_NI %>% mutate(condition_comparison = "ND_vs_NI"),
+  DD_vs_NN %>% mutate(condition_comparison = "DD_vs_NN"),
+  DN_vs_ND %>% mutate(condition_comparison = "DN_vs_ND")
+)
+
+# Perform pairwise t-tests
+t_test_results <- combined_conditions %>%
+  split(.$condition_comparison) %>%
+  map(~pairwise.t.test(.$measure, .$participant, p.adjust.method = "bonferroni"))
+
+# Print the t-test results
+print(t_test_results)
+
+color_palette <- brewer.pal(4, "Pastel1")
+
+# Plotting combined data with the chosen color palette
+combined_conditions %>%
+  ggplot(aes(x = participant, y = measure, fill = condition_comparison)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~condition_comparison) + # separate panels for each condition comparison
+  scale_fill_manual(values = color_palette) +
+  labs(x = "Participant", y = "Measure", fill = "Condition Comparison") +
+  theme_minimal()  +
+  facet_wrap(~ctl_or_exper)
+
+```
+
+# 2x3 interaction
+
+## Dummy coding
+
+```{r dummy coded model, echo = FALSE}
+# Adjusted custom label function
+add_custom_labels <- function(df) {
+  df %>%
+    mutate(marcel_type = case_when(
+      str_detect(condition, "I$") ~ "control",
+      str_detect(condition, "DD$") | str_detect(condition, "NN$") ~ "congruent",
+      str_detect(condition, "DN$") | str_detect(condition, "ND$") ~ "incongruent",
+      TRUE ~ as.character(condition)
+    ))
+}
+
+# Apply custom labels
+two_by_three <- add_custom_labels(two_by_three)
+
+two_by_two <- two_by_three %>%
+  filter(marcel_type %in% c("incongruent", "control"))
+
+# Adjusted function to fit LMER model and print summary
+fit_and_summarize <- function(df, fixed_effects, random_effects = "(1 | participant)", data_name = "Data") {
+  model <- lmer(paste("on_time_2.rt ~", fixed_effects, random_effects), data = df, REML = TRUE)
+  cat("\nSummary for", data_name, ":\n")
+  print(summary(model))
+  return(model)  # Return for possible further use
+}
+
+# Fit models and display summaries using the new marcel_type column
+fit_and_summarize(two_by_two, "code1 * marcel_type * ctl_or_exper", data_name = "Two-by-Two")
+fit_and_summarize(subset(two_by_two, code1 == "N"), "marcel_type * ctl_or_exper", data_name = "N Only")
+fit_and_summarize(subset(two_by_two, code1 == "D"), "marcel_type * ctl_or_exper", data_name = "D Only")
+
+# Relevel factors in two_by_three
+two_by_three <- two_by_three %>%
+  mutate(code1 = relevel(code1, ref = "N"),
+         code2 = relevel(code2, ref = "I"),
+         run_num = factor(run_num),
+         run_num = relevel(run_num, ref = "1"))  # Assuming '1' should be the reference level
+
+# Fit model for two_by_three including run_num using the new marcel_type column
+fit_and_summarize(two_by_three, "code1 * marcel_type * ctl_or_exper", data_name = "Two-by-Three")
+```
+
+## Simple coding
+
+```{r}
+########### custom coding ################
+
+# Print current levels of the factor variables
+print(levels(two_by_three$code1))
+print(levels(two_by_three$marcel_type))
+
+# Assign contrasts based on the order of the levels printed
+contrasts(two_by_three$code1) <- c(1, -1)  # Make sure this matches the desired contrast for the levels of code1
+contrasts(two_by_three$marcel_type) <- c(1, 0, -1)  # Make sure this matches the desired contrast for the levels of marcel_type
+
+# Now you can fit the model knowing that the contrasts correspond to the factor levels correctly
+marcel_model <- lmer(on_time_2.rt ~ code1 * marcel_type * ctl_or_exper + (1 | participant), data = two_by_three, REML = TRUE)
+summary(marcel_model)
+
+# Now you can fit the model knowing that the contrasts correspond to the factor levels correctly
+marcel_model_NR <- lmer(
+  on_time_2.rt ~ code1 * marcel_type * Christina_NR_composite * ctl_or_exper + (1 | participant), 
+  data = two_by_three, 
+  REML = TRUE)
+
+summary(marcel_model_NR)
+
+marcel_model_Woo <- lmer(
+  on_time_2.rt ~ code1 * marcel_type * Woo_composite * ctl_or_exper + (1 | participant), 
+  data = two_by_three, 
+  REML = TRUE)
+
+summary(marcel_model_Woo)
+
+```
+
+# Interaction visualization
+
+```{r, echo = FALSE}
+# Reorder the levels of the factor variables
+two_by_three$code1 <- factor(two_by_three$code1, levels = c("D", "N"))
+two_by_three$code2 <- factor(two_by_three$code2, levels = c("D", "I", "N"))
+
+summary_df <- plyr::ddply(two_by_three, c("code1", "code2", "ctl_or_exper"),
+                          summarize, mean_rt = mean(on_time_2.rt),
+                          se_rt = sd(on_time_2.rt) / sqrt(length(on_time_2.rt)))
+
+summary_df <-summary_df %>% filter(code2 %in% c("D", "I", "N"))
+
+# Add a new column with custom labels
+summary_df$custom_labels <- c("congruent", "control", "incongruent", "incongruent", "control", "congruent")
+
+```
+
+
+```{r}
+# Plot the data with error bars
+plot2a <- ggplot(summary_df, aes(x = code1, y = mean_rt, fill = code2)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_errorbar(
+    aes(ymin = mean_rt - se_rt,
+        ymax = mean_rt + se_rt),
+    width = 0.2,
+    position = position_dodge(0.9)) +
+  labs(
+    x = "First Word", 
+    y = "Reaction time (sec)") +
+  scale_fill_manual(
+    name = "Second Word", 
+    labels = c("Dominant", "Irrelevant", "Nondominant"),
+    values = wes_palette("GrandBudapest1")) +
+  theme_minimal() +
+  scale_x_discrete(labels = c("Dominant", "Nondominant")) +
+  coord_cartesian(ylim = c(.2, .8)) +
+  facet_wrap(~ctl_or_exper)
+
+plot2a
+```
+
+
+```{r}
+# Add the new column based on conditions
+two_by_three <- two_by_three %>%
+  mutate(congruency = case_when(
+    as.character(code1) == as.character(code2) ~ "congruent",
+    code2 == "I" ~ "control",
+    TRUE ~ "incongruent"
+  ))
+
+
+# Summarize mean_rt and se_rt based on the new column
+summary_by_congruency <- two_by_three %>%
+  group_by(congruency, ctl_or_exper) %>%
+  summarize(
+    mean_rt = mean(on_time_2.rt),
+    se_rt = sd(on_time_2.rt) / sqrt(n())
+  )
+
+```
+
+```{r exper only anova}
+exper_only <- two_by_three %>% filter(ctl_or_exper == "exper")
+
+anova_result <- aov(on_time_2.rt ~ congruency, data = exper_only)
+summary(anova_result)
+
+library(emmeans)
+pairwise_comparisons <- emmeans(anova_result, pairwise ~ congruency, adjust = "tukey")
+pairwise_comparisons
+
+# Convert congruency to a factor
+exper_only$congruency <- as.factor(exper_only$congruency)
+
+# Set "control" as the reference level
+exper_only$congruency <- relevel(exper_only$congruency, ref = "control")
+
+# Now fit the linear regression model
+model <- lm(on_time_2.rt ~ congruency, data = exper_only)
+summary(model)
+```
+
+
+```{r}
+plot1 <- ggplot(summary_by_congruency, aes(x = congruency, fill = congruency, y = mean_rt)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  geom_errorbar(
+    aes(ymin = mean_rt - se_rt, 
+        ymax = mean_rt + se_rt),
+    width = 0.2) +
+  labs(
+    x = "Word type", 
+    y = "Reaction time (sec)") +
+  theme_light() +
+  coord_cartesian(ylim = c(.2, .8)) +
+  scale_fill_manual(
+    values = wes_palette("GrandBudapest1")) +
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 14),  # Adjust size for x-axis label
+        axis.title.y = element_text(size = 14),  # Adjust size for y-axis label
+        axis.text.x = element_text(size = 12),   # Adjust size for x-axis tick labels
+        axis.text.y = element_text(size = 12)) +   # Adjust size for y-axis tick labels
+  facet_wrap(~ctl_or_exper)
+
+plot1
+
+```
+
+```{r}
+# Plot the data with error bars
+plot2b <- ggplot(summary_df, aes(x = code1, y = mean_rt, fill = code2)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_errorbar(
+    aes(ymin = mean_rt - se_rt, 
+        ymax = mean_rt + se_rt),
+    width = 0.2, 
+    position = position_dodge(0.9)) +
+  labs(
+    x = "First Word", 
+    y = "Reaction time (sec)") +
+  scale_fill_manual(
+    name = "Second Word", 
+    labels = c("Dominant", "Irrelevant", "Nondominant"),
+    values = wes_palette("GrandBudapest1")) +
+  theme_minimal() +
+  # geom_text(x = 1.5, y = 1.1, label = "***", size = 10, color = "black") +
+  scale_x_discrete(labels = c("Dominant", "Nondominant")) +
+  coord_cartesian(ylim = c(.2, .8)) + facet_grid(. ~ ctl_or_exper) 
+
+plot2b
+```
+
+
+```{r}
+
+# Add geom_text() to insert custom labels with vertical orientation
+plot2b <- plot2b + geom_text(
+  aes(label = custom_labels),
+  position = position_dodge(width = 0.9),
+  angle = 90,     # Set the angle to 90 for vertical labels
+  hjust = 1.3,    # Adjust horizontal justification
+  color = "white",
+  size = 4
+) +
+  annotate("text", x = 0.5, y = .23, label = "↓", size = 7, vjust = 1)
+
+print(plot2b)
+```
+
+```{r}
+# Save the ggplot as a PNG file
+# ggsave("interaction_plot_1.png", plot2b, width = 6, height = 4, dpi = 300)
+```
+
+# Mistakes model
+
+```{r mistakes model, echo = FALSE}
+DN_primes <- mistakes_included %>% filter(code1 %in% c("D", "N"))
+
+# Filter for first choice being correct
+first_choice_right <- DN_primes %>% filter(first_choice_wrong == 0)
+
+# Helper function to create and summarize the model
+run_model <- function(data, formula) {
+  model <- lm(formula, data = data)
+  summary(model)
+}
+
+# Models and corresponding data sets
+models <- list(
+  all_data = list(data = first_choice_right, formula = second_choice_wrong ~ code1 * code2),
+  incong = list(data = first_choice_right %>% filter(marcel_type == "incongruent"), 
+                formula = second_choice_wrong ~ code1 * ctl_or_exper),
+  cong = list(data = first_choice_right %>% filter(marcel_type == "congruent"), 
+              formula = second_choice_wrong ~ code1 * ctl_or_exper)
+)
+
+# Run and summarize the models
+results <- map(models, ~run_model(.x$data, .x$formula))
+results
+
+```
+
+# Mistakes plots
+
+```{r, echo = FALSE}
+second_choice_wrong$condition <- factor(second_choice_wrong$condition, levels = my_order)
+
+dt <- table(second_choice_wrong$condition)
+
+# Convert table to dataframe
+
+mistakes_summary <- second_choice_wrong %>%
+  filter(code1 %in% c("D", "N"), code2 %in% c("D", "N", "I")) %>%
+  group_by(code1, code2) # group by columns starting with D or I
+
+mistakes_summary <- mistakes_summary %>%
+  dplyr::group_by(code1, code2, ctl_or_exper) %>%
+  dplyr::summarise(Freq = n())
+```
+
+# fix from here
+
+```{r}
+# Step 1: Create a new column to represent the condition you want to calculate proportions for
+filtered_columns$condition <- as.factor(filtered_columns$condition)
+
+# Step 2: Calculate the proportions and confidence intervals separately for each value of "condition"
+results <- filtered_columns %>%
+  group_by(condition) %>%
+  summarise(count_condition = sum(choice_2 != correct_answer_2 & choice_1 == correct_answer_1),
+            count_choice_1_condition = sum(choice_1 == correct_answer_1)) %>%
+  rowwise() %>%
+  do({
+    proportion <- .$count_condition / .$count_choice_1_condition
+    ci <- binom.test(x = .$count_condition, n = .$count_choice_1_condition)$conf.int
+    data.frame(., proportion = proportion, ci_lower = ci[1], ci_upper = ci[2])
+  }) %>%
+  ungroup()
+
+# Add significance bars
+results <- results %>%
+  mutate(significance_bar = ifelse(proportion > ci_upper, "*", ifelse(proportion < ci_lower, "**", "")))
+
+results$proportion <- results$proportion * 100
+results$ci_upper <- results$ci_upper * 100
+results$ci_lower <- results$ci_lower * 100
+
+# Print the results
+print(results)
+
+# This updated code should calculate the proportions, confidence intervals, and add significance bars for count data for each condition individually.
+
+```
+
+
+```{r, echo = FALSE}
+results$condition <- factor(results$condition, levels = my_order)
+
+results <- results %>%
+  separate(condition, into = c("code1", "code2"), sep = 1)
+
+results <- results %>%
+  filter(code1 %in% c("D", "N"))
+
+add_custom_labels <- function(results) {
+  results$custom_labels <- ifelse(results$code2 == "I", "irrelevant",
+                                  ifelse(results$code1 == results$code2, "con.", "incongruent"))
+  return(results)
+}
+
+# Assuming 'results' is your dataframe
+results <- add_custom_labels(results)
+
+# Create bar chart
+mistakes_plot <- 
+  ggplot(results, aes(x = code1, y = proportion, fill = code2)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "First Word", y = "% Mistakes after 1st Choice Correct") +
+  scale_fill_manual(
+    name = "Second Word", 
+    labels = c("Dominant", "Irrelevant", "Nondominant"),
+    values = wes_palette("GrandBudapest1")) +
+  theme_minimal() +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper), 
+    width = 0.2, 
+    position = position_dodge(0.9)) +
+  scale_x_discrete(labels = c("Dominant", "Nondominant")) +
+  coord_cartesian(ylim = c(0, 30))
+
+mistakes_plot
+
+# Add geom_text() to insert custom labels with vertical orientation
+mistakes_plot <- mistakes_plot + geom_text(
+  aes(label = custom_labels),
+  position = position_dodge(width = 0.9),
+  angle = 90,     # Set the angle to 90 for vertical labels
+  hjust = 1.5,    # Adjust horizontal justification
+  color = "white",
+  size = 4
+)
+
+print(mistakes_plot)
+
+```
+
+```{r}
+two_by_three$code1 <- relevel(two_by_three$code1, ref = "N")
+two_by_three$code2 <- relevel(two_by_three$code2, ref = "I")
+
+# Fit the linear mixed-effects model
+two_by_three_model <- lmer(on_time_2.rt ~ code1 * code2 + (1 | participant), data = two_by_three, REML = TRUE)
+```

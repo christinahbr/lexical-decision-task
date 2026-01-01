@@ -1,0 +1,91 @@
+dom_w,pair,word_1,construal_level_1,image_path,resp_1,word_2,resp_2,construal_level_2,condition,construal_shift
+9,3,sinking,low,images/9.jpg,yes,leaping,yes,low,DI,low low
+19,1,lounging,low,images/19.jpg,yes,parsting ,no,na,DC,low na
+14,9,distracted,high,images/14.jpg,yes,shrumpsical  ,no,na,DC,high na
+3,8,dialing,high,images/3-alt.jpg,no,answering,yes,high,IN,high high
+18,8,lecturer,high,images/18-alt.jpg,no,student,yes,high,IN,high high
+8,4,wandering,high,images/8.jpg,yes,lost,yes,high,DN,high high
+20,5,business,low,images/20-alt.jpg,no,tirth ,no,na,IC,low na
+11,8,journeying,high,images/11-alt.jpg,no,worrying,yes,high,IN,high high
+13,3,teaching,high,images/13.jpg,yes,grinning,yes,low,DI,high low
+7,3,evaluating,high,images/7.jpg,yes,splattering,yes,low,DI,high low
+17,1,tourist,high,images/17.jpg,yes,thwoad ,no,na,DC,high na
+2,7,disrobing,low,images/2-alt.jpg,no,journaling,yes,low,II,low low
+15,5,teasing,low,images/15-alt.jpg,no,triggish,no,na,IC,low na
+6,4,learning,high,images/6.jpg,yes,videochatting,yes,low,DN,high low
+12,3,declining,high,images/12.jpg,yes,swearing,yes,low,DI,high low
+4,9,entertaining,high,images/4.jpg,yes,bloamsing,no,na,DC,high na
+1,7,giving,low,images/1-alt.jpg,no,sleeping,yes,low,II,low low
+10,7,admiring,low,images/10-alt.jpg,no,estimating,yes,high,II,low high
+5,6,enjoying,low,images/5-alt.jpg,no,relaxing,yes,high,ID,low high
+16,1,serene,high,images/16.jpg,yes,dwieved,no,na,DC,high na
+5,9,enjoying,high,images/5.jpg,yes,coarping ,no,na,DC,high na
+12,3,declining,high,images/12.jpg,yes,swearing,yes,low,DI,high low
+14,7,distracted,high,images/14-alt.jpg,no,expensive,yes,low,II,high low
+16,7,serene,high,images/16-alt.jpg,no,talented,yes,high,II,high high
+8,2,wandering,high,images/8.jpg,yes,exploring,yes,high,DD,high high
+13,3,teaching,high,images/13.jpg,yes,grinning,yes,low,DI,high low
+4,3,entertaining,high,images/4.jpg,yes,buttering,yes,low,DI,high low
+15,7,teasing,low,images/15-alt.jpg,no,loud,yes,low,II,low low
+18,2,lecturer,high,images/18.jpg,yes,professor,yes,high,DD,high high
+11,8,journeying,high,images/11-alt.jpg,no,worrying,yes,high,IN,high high
+3,3,dialing,low,images/3.jpg,yes,gambling,yes,high,DI,low high
+20,6,business,low,images/20-alt.jpg,no,work,yes,low,ID,low low
+7,7,evaluating,low,images/7-alt.jpg,no,splattering,yes,low,II,low low
+6,3,learning,high,images/6.jpg,yes,damaging,yes,high,DI,high high
+10,5,admiring,low,images/10-alt.jpg,no,proagging ,no,na,IC,low na
+19,1,lounging,low,images/19.jpg,yes,parsting ,no,na,DC,low na
+1,6,giving,low,images/1-alt.jpg,no,donating,yes,high,ID,low high
+2,8,disrobing,low,images/2-alt.jpg,no,preparing,yes,high,IN,low high
+17,2,tourist,high,images/17.jpg,yes,visitor,yes,high,DD,high high
+9,6,sinking,low,images/9-alt.jpg,no,drowning,yes,low,ID,low low
+5,4,enjoying,high,images/5.jpg,yes,commuting,yes,high,DN,high high
+6,3,learning,high,images/6.jpg,yes,damaging,yes,high,DI,high high
+4,6,entertaining,low,images/4-alt.jpg,no,playing,yes,high,ID,low high
+14,6,distracted,high,images/14-alt.jpg,no,absentminded,yes,high,ID,high high
+8,1,wandering,high,images/8.jpg,yes,thremming ,no,na,DC,high na
+3,6,dialing,high,images/3-alt.jpg,no,calling,yes,low,ID,high low
+1,1,giving,high,images/1.jpg,yes,prilping,no,na,DC,high na
+19,2,lounging,low,images/19.jpg,yes,unwinding,yes,high,DD,low high
+9,7,sinking,low,images/9-alt.jpg,no,leaping,yes,low,II,low low
+7,7,evaluating,low,images/7-alt.jpg,no,splattering,yes,low,II,low low
+16,6,serene,high,images/16-alt.jpg,no,peaceful,yes,high,ID,high high
+2,1,disrobing,low,images/2.jpg,yes,floarting ,no,na,DC,low na
+12,8,declining,high,images/12-alt.jpg,no,recovering,yes,high,IN,high high
+13,9,teaching,high,images/13.jpg,yes,gnoocking ,no,na,DC,high na
+15,2,teasing,high,images/15.jpg,yes,flirty,yes,high,DD,high high
+20,1,business,low,images/20.jpg,yes,tirth ,no,na,DC,low na
+11,6,journeying,high,images/11-alt.jpg,no,sightseeing,yes,high,ID,high high
+18,5,lecturer,high,images/18-alt.jpg,no,plasmer,no,na,IC,high na
+17,7,tourist,low,images/17-alt.jpg,no,laptop,yes,low,II,low low
+10,1,admiring,high,images/10.jpg,yes,proagging ,no,na,DC,high na
+4,4,entertaining,high,images/4.jpg,yes,punishing,yes,high,DN,high high
+14,5,distracted,high,images/14-alt.jpg,no,shrumpsical  ,no,na,IC,high na
+19,8,lounging,low,images/19-alt.jpg,no,waiting,yes,high,IN,low high
+17,5,tourist,low,images/17-alt.jpg,no,thwoad ,no,na,IC,low na
+5,4,enjoying,high,images/5.jpg,yes,commuting,yes,high,DN,high high
+13,8,teaching,low,images/13-alt.jpg,no,arguing,yes,high,IN,low high
+6,1,learning,high,images/6.jpg,yes,shulphing ,no,na,DC,high na
+8,9,wandering,high,images/8.jpg,yes,thremming ,no,na,DC,high na
+3,9,dialing,high,images/3.jpg,yes,swarding ,no,na,DC,low na
+10,8,admiring,low,images/10-alt.jpg,no,resting,yes,high,IN,low high
+9,1,sinking,low,images/9.jpg,yes,blerting ,no,na,DC,low na
+2,7,disrobing,low,images/2-alt.jpg,no,journaling,yes,low,II,low low
+11,4,journeying,high,images/11.jpg,yes,worrying,yes,high,DN,high high
+7,2,evaluating,high,images/7.jpg,yes,critiquing,yes,high,DD,high high
+20,5,business,low,images/20-alt.jpg,no,tirth ,no,na,IC,low na
+15,8,teasing,low,images/15-alt.jpg,no,shy,yes,high,IN,low high
+16,9,serene,high,images/16.jpg,yes,dwieved,no,na,DC,high na
+1,1,giving,high,images/1.jpg,yes,prilping,no,na,DC,high na
+12,6,declining,high,images/12-alt.jpg,no,worsening,yes,high,ID,high high
+18,3,lecturer,high,images/18.jpg,yes,buyer,yes,high,DI,high high
+10,3,admiring,high,images/10.jpg,yes,estimating,yes,high,DI,high high
+2,4,disrobing,low,images/2.jpg,yes,preparing,yes,high,DN,low high
+12,4,declining,high,images/12.jpg,yes,recovering,yes,high,DN,high high
+5,6,enjoying,low,images/5-alt.jpg,no,relaxing,yes,high,ID,low high
+6,1,learning,high,images/6.jpg,yes,shulphing ,no,na,DC,high na
+7,4,evaluating,high,images/7.jpg,yes,encouraging,yes,high,DN,high high
+3,3,dialing,low,images/3.jpg,yes,gambling,yes,high,DI,low high
+13,7,teaching,low,images/13-alt.jpg,no,grinning,yes,low,II,low low
+11,8,journeying,high,images/11-alt.jpg,no,worrying,yes,high,IN,high high
+9,1,sinking,low,images/9.jpg,yes,blerting ,no,na,DC,low na

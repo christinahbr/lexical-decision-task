@@ -1,0 +1,91 @@
+dom_w,pair,word_1,construal_level_1,image_path,resp_1,word_2,resp_2,construal_level_2,condition,construal_shift
+19,2,lounging,low,images/19.jpg,yes,unwinding,yes,high,DD,low high
+14,9,distracted,high,images/14.jpg,yes,shrumpsical  ,no,na,DC,high na
+10,6,admiring,low,images/10-alt.jpg,no,appreciating,yes,high,ID,low high
+16,1,serene,high,images/16.jpg,yes,dwieved,no,na,DC,high na
+11,4,journeying,high,images/11.jpg,yes,worrying,yes,high,DN,high high
+3,3,dialing,low,images/3.jpg,yes,gambling,yes,high,DI,low high
+7,9,evaluating,high,images/7.jpg,yes,thruiching ,no,na,DC,high na
+4,2,entertaining,high,images/4.jpg,yes,playing,yes,high,DD,high high
+5,5,enjoying,low,images/5-alt.jpg,no,coarping ,no,na,IC,low na
+1,4,giving,high,images/1.jpg,yes,stealing,yes,high,DN,high high
+20,9,business,low,images/20.jpg,yes,tirth ,no,na,DC,low na
+17,3,tourist,high,images/17.jpg,yes,laptop,yes,low,DI,high low
+15,4,teasing,high,images/15.jpg,yes,shy,yes,high,DN,high high
+18,3,lecturer,high,images/18.jpg,yes,buyer,yes,high,DI,high high
+2,5,disrobing,low,images/2-alt.jpg,no,floarting ,no,na,IC,low na
+12,4,declining,high,images/12.jpg,yes,recovering,yes,high,DN,high high
+8,7,wandering,low,images/8-alt.jpg,no,clean,yes,low,II,low low
+13,7,teaching,low,images/13-alt.jpg,no,grinning,yes,low,II,low low
+6,8,learning,high,images/6-alt.jpg,no,videochatting,yes,low,IN,high low
+9,6,sinking,low,images/9-alt.jpg,no,drowning,yes,low,ID,low low
+11,9,journeying,high,images/11.jpg,yes,slambithing ,no,na,DC,high na
+20,2,business,low,images/20.jpg,yes,work,yes,low,DD,low low
+1,6,giving,low,images/1-alt.jpg,no,donating,yes,high,ID,low high
+5,8,enjoying,low,images/5-alt.jpg,no,commuting,yes,high,IN,low high
+18,3,lecturer,high,images/18.jpg,yes,buyer,yes,high,DI,high high
+15,9,teasing,high,images/15.jpg,yes,triggish,no,na,DC,high na
+9,6,sinking,low,images/9-alt.jpg,no,drowning,yes,low,ID,low low
+13,3,teaching,high,images/13.jpg,yes,grinning,yes,low,DI,high low
+3,9,dialing,high,images/3.jpg,yes,swarding ,no,na,DC,low na
+17,5,tourist,low,images/17-alt.jpg,no,thwoad ,no,na,IC,low na
+14,2,distracted,high,images/14.jpg,yes,absentminded,yes,high,DD,high high
+16,5,serene,high,images/16-alt.jpg,no,dwieved,no,na,IC,high na
+7,4,evaluating,high,images/7.jpg,yes,encouraging,yes,high,DN,high high
+6,1,learning,high,images/6.jpg,yes,shulphing ,no,na,DC,high na
+2,1,disrobing,low,images/2.jpg,yes,floarting ,no,na,DC,low na
+19,9,lounging,low,images/19.jpg,yes,parsting ,no,na,DC,low na
+4,3,entertaining,high,images/4.jpg,yes,buttering,yes,low,DI,high low
+8,7,wandering,low,images/8-alt.jpg,no,clean,yes,low,II,low low
+10,1,admiring,high,images/10.jpg,yes,proagging ,no,na,DC,high na
+12,4,declining,high,images/12.jpg,yes,recovering,yes,high,DN,high high
+14,6,distracted,high,images/14-alt.jpg,no,absentminded,yes,high,ID,high high
+1,7,giving,low,images/1-alt.jpg,no,sleeping,yes,low,II,low low
+13,9,teaching,high,images/13.jpg,yes,gnoocking ,no,na,DC,high na
+20,4,business,low,images/20.jpg,yes,sitcom,yes,low,DN,low low
+15,9,teasing,high,images/15.jpg,yes,triggish,no,na,DC,high na
+5,9,enjoying,high,images/5.jpg,yes,coarping ,no,na,DC,high na
+10,6,admiring,low,images/10-alt.jpg,no,appreciating,yes,high,ID,low high
+19,8,lounging,low,images/19-alt.jpg,no,waiting,yes,high,IN,low high
+17,1,tourist,high,images/17.jpg,yes,thwoad ,no,na,DC,high na
+6,5,learning,high,images/6-alt.jpg,no,shulphing ,no,na,IC,high na
+9,5,sinking,low,images/9-alt.jpg,no,blerting ,no,na,IC,low na
+7,1,evaluating,high,images/7.jpg,yes,thruiching ,no,na,DC,high na
+16,5,serene,high,images/16-alt.jpg,no,dwieved,no,na,IC,high na
+4,7,entertaining,low,images/4-alt.jpg,no,buttering,yes,low,II,low low
+8,2,wandering,high,images/8.jpg,yes,exploring,yes,high,DD,high high
+11,3,journeying,high,images/11.jpg,yes,admitting,yes,high,DI,high high
+12,6,declining,high,images/12-alt.jpg,no,worsening,yes,high,ID,high high
+18,3,lecturer,high,images/18.jpg,yes,buyer,yes,high,DI,high high
+3,8,dialing,high,images/3-alt.jpg,no,answering,yes,high,IN,high high
+2,1,disrobing,low,images/2.jpg,yes,floarting ,no,na,DC,low na
+16,9,serene,high,images/16.jpg,yes,dwieved,no,na,DC,high na
+19,5,lounging,low,images/19-alt.jpg,no,parsting ,no,na,IC,low na
+15,9,teasing,high,images/15.jpg,yes,triggish,no,na,DC,high na
+7,2,evaluating,high,images/7.jpg,yes,critiquing,yes,high,DD,high high
+3,8,dialing,high,images/3-alt.jpg,no,answering,yes,high,IN,high high
+2,9,disrobing,high,images/2.jpg,yes,floarting ,no,na,DC,low na
+14,5,distracted,high,images/14-alt.jpg,no,shrumpsical  ,no,na,IC,high na
+12,4,declining,high,images/12.jpg,yes,recovering,yes,high,DN,high high
+9,8,sinking,low,images/9-alt.jpg,no,floating,yes,low,IN,low low
+10,1,admiring,high,images/10.jpg,yes,proagging ,no,na,DC,high na
+20,7,business,low,images/20-alt.jpg,no,lamp,yes,low,II,low low
+13,6,teaching,low,images/13-alt.jpg,no,instructing,yes,high,ID,low high
+1,8,giving,low,images/1-alt.jpg,no,stealing,yes,high,IN,low high
+5,4,enjoying,high,images/5.jpg,yes,commuting,yes,high,DN,high high
+8,6,wandering,low,images/8-alt.jpg,no,exploring,yes,high,ID,low high
+4,2,entertaining,high,images/4.jpg,yes,playing,yes,high,DD,high high
+11,1,journeying,high,images/11.jpg,yes,slambithing ,no,na,DC,high na
+18,4,lecturer,high,images/18.jpg,yes,student,yes,high,DN,high high
+17,6,tourist,low,images/17-alt.jpg,no,visitor,yes,high,ID,low high
+6,1,learning,high,images/6.jpg,yes,shulphing ,no,na,DC,high na
+18,1,lecturer,high,images/18.jpg,yes,plasmer,no,na,DC,high na
+10,4,admiring,high,images/10.jpg,yes,resting,yes,high,DN,high high
+15,9,teasing,high,images/15.jpg,yes,triggish,no,na,DC,high na
+11,9,journeying,high,images/11.jpg,yes,slambithing ,no,na,DC,high na
+14,7,distracted,high,images/14-alt.jpg,no,expensive,yes,low,II,high low
+16,2,serene,high,images/16.jpg,yes,peaceful,yes,high,DD,high high
+6,6,learning,high,images/6-alt.jpg,no,studying,yes,high,ID,high high
+2,7,disrobing,low,images/2-alt.jpg,no,journaling,yes,low,II,low low
+12,9,declining,high,images/12.jpg,yes,blurging ,no,na,DC,high na
+9,3,sinking,low,images/9.jpg,yes,leaping,yes,low,DI,low low
